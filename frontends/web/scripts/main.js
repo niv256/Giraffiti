@@ -217,6 +217,16 @@ function event_nodeAction() {
     })
 }
 
+function event_unSelect() {
+    window.tabsController.onCurrent((_, controller) => {
+        if (controller.selectedNode != null) {
+            controller.selectedNode = null;
+            controller.cachedMermaid = null;
+            controller.draw();
+        }
+    })
+}
+
 function event_help() {
     Swal.fire({
         title: 'Graffiti',
