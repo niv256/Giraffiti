@@ -231,9 +231,9 @@ function event_help() {
                 <li>A list of the linked projects is also available under the tab</li>
                 <br />
                 <li>When node is selected:</li>
-                <li>Press E to edit or jump to it.</li>
+                <li>Press Space to edit or jump to it.</li>
                 <li>Press 1-7 to theme it.</li>
-                <li>Press Space to unselect it.</li>
+                <li>Press Escape to unselect it.</li>
                 <br />
                 <li>Right click the center button to toggle the renderer between default and elk</li>
                 </ul>
@@ -334,7 +334,7 @@ function elk_beforeCallback(id, graph) {
 }
 
 function initiateHotkeys() {
-    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,space,e', function (event, handler) {
+    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,escape,space', function (event, handler) {
         switch (handler.key) {
             case 'ctrl+z':
                 event_undo();
@@ -392,10 +392,10 @@ function initiateHotkeys() {
             case 'ctrl+a':
                 event_addTab();
                 return false;
-            case 'space':
+            case 'escape':
                 event_unSelect();
                 return false;
-            case 'e':
+            case 'space':
                 event_nodeAction();
                 return false;
         }
