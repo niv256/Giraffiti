@@ -199,6 +199,14 @@ function event_unSelect() {
     })
 }
 
+function event_nodeAction() {
+    window.tabsController.onCurrent((_, controller) => {
+        if (controller.selectedNode != null) {
+            controller.onRightClick(null, controller.selectedNode.id);
+        }
+    })
+}
+
 function event_help() {
     Swal.fire({
         title: 'Graffiti',
@@ -221,8 +229,12 @@ function event_help() {
                 <li>Middle click to swap a node with the selected node (same parent). ctrl for same son, shift for id swap</li>
                 <li>To rename or remove a graph, right click the tab's name.</li>
                 <li>A list of the linked projects is also available under the tab</li>
-                <li>When node is selected, use 1-7 to theme it.</li>
-                <li>To unselect a node, press Space.</li>
+                <br />
+                <li>When node is selected:</li>
+                <li>Press E to edit or jump to it.</li>
+                <li>Press 1-7 to theme it.</li>
+                <li>Press Space to unselect it.</li>
+                <br />
                 <li>Right click the center button to toggle the renderer between default and elk</li>
                 </ul>
         `,
@@ -322,7 +334,7 @@ function elk_beforeCallback(id, graph) {
 }
 
 function initiateHotkeys() {
-    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,space', function (event, handler) {
+    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,space,e', function (event, handler) {
         switch (handler.key) {
             case 'ctrl+z':
                 event_undo();
@@ -382,6 +394,9 @@ function initiateHotkeys() {
                 return false;
             case 'space':
                 event_unSelect();
+                return false;
+            case 'e':
+                event_nodeAction();
                 return false;
         }
     });
