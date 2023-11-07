@@ -8,6 +8,7 @@ class TabsController {
         this.contextMenu = contextMenu
         this.contextMenuOpenedForTab = null
         this.selectedTab = null
+        this.selectTab(null)
 
         this.#initiateContextMenu()
     }
@@ -68,6 +69,7 @@ class TabsController {
                     this.selectTab(this.tabs[0])
                 } else {
                     this.selectedTab = null
+                    this.selectedTab = null
                 }
             } else {
                 // go to one before
@@ -90,6 +92,12 @@ class TabsController {
             contentElement.classList.add("hidden")
         }
 
+        if (tab == null) {
+            this.selectedTab = null;
+            this.selectedTabIndex = -1;
+            return
+        }
+
         // enable new selected tab
         const { tabElement, contentElement } = tab
         tabElement.classList.add("active");
@@ -97,6 +105,7 @@ class TabsController {
 
         // Save selected tab
         this.selectedTab = tab
+        this.selectedTabIndex = this.tabs.indexOf(tab)
     }
 
     onCurrent(callback) {
@@ -146,6 +155,34 @@ class TabsController {
         }
     }
 
+    renameTabAction(index) {
+        var tab = this.tabs[index];
+
+        setTimeout(() => {
+            Swal.fire({
+                title: 'Rename tab',
+                input: 'text',
+                inputValue: tab.name,
+                showCancelButton: true
+              }).then(({value=null}) => {
+                    if (value != null) {
+                        tab.tabElement.textContent = value
+                        tab.name = value
+                        this.save()
+                    }
+              })
+        });
+    }
+
+    removeTabAction(index) {
+        var tab = this.tabs[index];
+
+        this.removeTab(index)
+        if (this.count() == 0) {
+            this.#addEmptyTab()
+        }
+    }
+
     #initiateContextMenu() {
         const realThis = this
 
@@ -163,25 +200,11 @@ class TabsController {
             realThis.contextMenuOpenedForTab = null
             realThis.contextMenu.classList.remove("visible");
 
-            setTimeout(() => {
-                if (contextMenuOpenedForTab != null) {
-                    const { name, tabElement } = contextMenuOpenedForTab
-                    Swal.fire({
-                        title: 'Rename tab',
-                        input: 'text',
-                        inputValue: name,
-                        showCancelButton: true
-                      }).then(({value=null}) => {
-                            if (value != null) {
-                                tabElement.textContent = value
-                                contextMenuOpenedForTab.name = value
-        
-                                realThis.save()
-                            }
-                      })
-                    
-                }
-            });
+            const selectedTabIndex = realThis.tabs.indexOf(contextMenuOpenedForTab)
+
+            if (contextMenuOpenedForTab != null) {
+                realThis.renameTabAction(selectedTabIndex);
+            }
         }
 
         this.contextMenu.querySelector("#removeTab").onclick = function () {
@@ -190,11 +213,10 @@ class TabsController {
             realThis.contextMenuOpenedForTab = null
             realThis.contextMenu.classList.remove("visible");
 
+            const selectedTabIndex = realThis.tabs.indexOf(contextMenuOpenedForTab)
+
             if (contextMenuOpenedForTab != null) {
-                realThis.removeTab(realThis.tabs.indexOf(contextMenuOpenedForTab))
-                if (realThis.count() == 0) {
-                    realThis.#addEmptyTab()
-                }
+                realThis.removeTabAction(selectedTabIndex);
             }
         }
 

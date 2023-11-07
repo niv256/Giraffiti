@@ -181,6 +181,14 @@ function setHelpBarAppearance() {
     }
 }
 
+function event_renameTab() {
+    window.tabsController.renameTab(window.tabsController.selectedTabIndex);
+}
+
+function event_removeTab() {
+    window.tabsController.removeTab(window.tabsController.selectedTabIndex);
+}
+
 function event_help() {
     Swal.fire({
         title: 'Graffiti',
@@ -303,7 +311,7 @@ function elk_beforeCallback(id, graph) {
 }
 
 function initiateHotkeys() {
-    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7', function (event, handler) {
+    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2', function (event, handler) {
         switch (handler.key) {
             case 'ctrl+z':
                 event_undo();
@@ -352,6 +360,12 @@ function initiateHotkeys() {
                 themeIndex = parseInt(event.key) -1
                 event_setTheme(themeIndex)
                 return
+            case 'ctrl+r':
+                event_removeTab();
+                return false;
+            case 'f2':
+                event_renameTab();
+                return false;
         }
     });
 }
