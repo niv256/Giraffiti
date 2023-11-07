@@ -189,6 +189,16 @@ function event_removeTab() {
     window.tabsController.removeTab(window.tabsController.selectedTabIndex);
 }
 
+function event_unSelect() {
+    window.tabsController.onCurrent((_, controller) => {
+        if (controller.selectedNode != null) {
+            controller.selectedNode = null;
+            controller.cachedMermaid = null;
+            controller.draw();
+        }
+    })
+}
+
 function event_help() {
     Swal.fire({
         title: 'Graffiti',
@@ -212,6 +222,7 @@ function event_help() {
                 <li>To rename or remove a graph, right click the tab's name.</li>
                 <li>A list of the linked projects is also available under the tab</li>
                 <li>When node is selected, use 1-7 to theme it.</li>
+                <li>To unselect a node, press Space.</li>
                 <li>Right click the center button to toggle the renderer between default and elk</li>
                 </ul>
         `,
@@ -311,7 +322,7 @@ function elk_beforeCallback(id, graph) {
 }
 
 function initiateHotkeys() {
-    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a', function (event, handler) {
+    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,space', function (event, handler) {
         switch (handler.key) {
             case 'ctrl+z':
                 event_undo();
@@ -368,6 +379,9 @@ function initiateHotkeys() {
                 return false;
             case 'ctrl+a':
                 event_addTab();
+                return false;
+            case 'space':
+                event_unSelect();
                 return false;
         }
     });
