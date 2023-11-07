@@ -72,19 +72,29 @@ function event_center() {
     })
 }
 
+function export_tab(tabName, tabController) {
+    console.log(tabName)
+    console.log(tabController)
+    const blob = new Blob([tabController.export()])
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.style.display = 'none'
+    a.href = url
+    a.download = tabName + '.json'
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+}
+
 function event_export() {
     tabsController.onCurrent((name, controller) => {
-        const blob = new Blob([controller.export()])
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.style.display = 'none'
-        a.href = url
-        a.download = name + '.json'
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
+        export_tab(name, controller)
     })
+}
+
+function event_bundleExport() {
+    tabsController.tabs.forEach(({name, tabController}) => {export_tab(name, tabController)})
 }
 
 function event_import() {
@@ -334,7 +344,7 @@ function elk_beforeCallback(id, graph) {
 }
 
 function initiateHotkeys() {
-    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,escape,space', function (event, handler) {
+    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+shift+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,escape,space', function (event, handler) {
         switch (handler.key) {
             case 'ctrl+z':
                 event_undo();
@@ -345,6 +355,9 @@ function initiateHotkeys() {
                 return false;
             case 'ctrl+s':
                 event_export();
+                return false;
+            case 'ctrl+shift+s':
+                event_bundleExport();
                 return false;
             case 'ctrl+o':
                 event_import();
