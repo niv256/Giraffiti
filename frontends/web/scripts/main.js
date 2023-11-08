@@ -3,7 +3,14 @@ const MSG_ADD_NODES_AND_EDGES = "addDataBulk"
 const MSG_UPDATE_NODES = "updateNodes"
 const LOCAL_STORAGE_DEFAULT = {isKeymapReversed: false, hoverDoc: false}
 
+const GIRAFFE_OPACITY = 0.6;
+const GIRAFFE_INTERVAL = 1 * 60 * 60 * 1000;
+const GIRAFFE_DURATION = 3 * 1000;
 
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 function event_connect() {
     const url = document.getElementById("socketUrl").value
@@ -28,7 +35,6 @@ function event_reset() {
             }
         })
 }
-
 
 function event_undo() {
     window.tabsController.onCurrent((_, controller) => {
@@ -73,8 +79,6 @@ function event_center() {
 }
 
 function export_tab(tabName, tabController) {
-    console.log(tabName)
-    console.log(tabController)
     const blob = new Blob([tabController.export()])
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -221,19 +225,23 @@ function event_nodeAction() {
     })
 }
 
-function event_unSelect() {
-    window.tabsController.onCurrent((_, controller) => {
-        if (controller.selectedNode != null) {
-            controller.selectedNode = null;
-            controller.cachedMermaid = null;
-            controller.draw();
-        }
-    })
+var forceGiraffe = false;
+function event_toggleGiraffeMode() {
+    forceGiraffe = !forceGiraffe
+    event_showGiraffe(false)
+}
+
+function event_showGiraffe(show) {
+    const shouldShowGiraffe = show || forceGiraffe;
+    const opacity = shouldShowGiraffe ? GIRAFFE_OPACITY : 1
+    const newStyle = `background-image:linear-gradient(rgba(255,255,255,${opacity}), rgba(255,255,255,${opacity})), url('images/giraffe.jpg');background-size:100% 100%`
+
+    document.getElementById("viewId").style = newStyle
 }
 
 function event_help() {
     Swal.fire({
-        title: 'Graffiti',
+        title: 'Giraffiti',
         html: `Create customized callgraph directly from your favorite editor.
                 <br /><br />
                 <strong>Server</strong> - To run graffiti, Run the python server. 
@@ -326,6 +334,11 @@ function addTextualNode(title, extra_node_properties, extra_edge_properties={}) 
         })
 }
 
+function spawnGiraffeTimer() {
+    setTimeout(event_showGiraffe, 0, true)
+    setTimeout(event_showGiraffe, GIRAFFE_DURATION, false)
+}
+
 function main() {
     initiateLocalStorage();
     initiateDependencies();
@@ -338,6 +351,8 @@ function main() {
     tabsController.restore()
 
     window.tabsController = tabsController
+
+    setInterval(spawnGiraffeTimer, GIRAFFE_INTERVAL)
 }
 
 function initiateDependencies() {
@@ -358,7 +373,7 @@ function elk_beforeCallback(id, graph) {
 }
 
 function initiateHotkeys() {
-    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+shift+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,ctrl+shift+r,f2,ctrl+a,escape,space', function (event, handler) {
+    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+shift+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,ctrl+shift+r,f2,ctrl+a,escape,space,ctrl+alt+g', function (event, handler) {
         switch (handler.key) {
             case 'ctrl+z':
                 event_undo();
@@ -427,6 +442,9 @@ function initiateHotkeys() {
                 return false;
             case 'space':
                 event_nodeAction();
+                return false;
+            case 'ctrl+alt+g':
+                event_toggleGiraffeMode();
                 return false;
         }
     });
