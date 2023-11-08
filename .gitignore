@@ -509,3 +509,4 @@ FodyWeavers.xsd
 out
 node_modules
 *.vsix
+**/tags
