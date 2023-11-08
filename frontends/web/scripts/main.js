@@ -199,6 +199,10 @@ function event_removeTab() {
     window.tabsController.removeTab(window.tabsController.selectedTabIndex);
 }
 
+function event_restoreTab() {
+    window.tabsController.restoreTabAction();
+}
+
 function event_unSelect() {
     window.tabsController.onCurrent((_, controller) => {
         if (controller.selectedNode != null) {
@@ -354,7 +358,7 @@ function elk_beforeCallback(id, graph) {
 }
 
 function initiateHotkeys() {
-    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+shift+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,f2,ctrl+a,escape,space', function (event, handler) {
+    hotkeys('ctrl+z,ctrl+shift+z,ctrl+y,ctrl+s,ctrl+shift+s,ctrl+o,ctrl+i,ctrl+alt+shift+i,ctrl+q,ctrl+shift+q,delete,home,shift+/,ctrl+shift+/,1,2,3,4,5,6,7,ctrl+r,ctrl+shift+r,f2,ctrl+a,escape,space', function (event, handler) {
         switch (handler.key) {
             case 'ctrl+z':
                 event_undo();
@@ -408,6 +412,9 @@ function initiateHotkeys() {
                 return
             case 'ctrl+r':
                 event_removeTab();
+                return false;
+            case 'ctrl+shift+r':
+                event_restoreTab();
                 return false;
             case 'f2':
                 event_renameTab();

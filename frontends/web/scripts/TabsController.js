@@ -1,8 +1,9 @@
-const STORAGE_VERSION = 2
+const STORAGE_VERSION = 3
 
 class TabsController {
     constructor(tabsView, contentView, contextMenu) {
         this.tabs = []
+        this.removedTabs = []
         this.tabsView = tabsView
         this.contentView = contentView
         this.contextMenu = contextMenu
@@ -52,9 +53,11 @@ class TabsController {
     }
 
     removeTab(index) {
-        const [{ tabController, tabElement, contentElement }] = this.tabs.splice(index, 1)
+        const [{ name, tabController, tabElement, contentElement }] = this.tabs.splice(index, 1)
 
         tabController.deinitView()
+        const innerData = tabController.export()
+        this.removedTabs.push({name, innerData})
         tabElement.remove()
         contentElement.remove()
 
@@ -124,7 +127,9 @@ class TabsController {
     }
 
     save() {
-        const data = JSON.stringify(this.tabs.map(({ name, tabController }) => [name, tabController.export()]))
+        const tabs = this.tabs.map(({ name, tabController }) => [name, tabController.export()])
+        const removedTabs = this.removedTabs
+        const data = JSON.stringify({tabs, removedTabs})
         localStorage.setItem("__SAVED_DATA", data)
         localStorage.setItem("__SAVED_DATA_VERSION", STORAGE_VERSION)
     }
@@ -146,6 +151,13 @@ class TabsController {
                     const tab = this.addTab(name, false)
                     tab.tabController.import(innerData)
                 }
+            } else if (version == 3) {
+                for (const [name, innerData] of data.tabs) {
+                    const tab = this.addTab(name, false)
+                    tab.tabController.import(innerData)
+                }
+
+                this.removedTabs = data.removedTabs
             }
         }
         if (this.count() >= 1) {
@@ -181,6 +193,17 @@ class TabsController {
         if (this.count() == 0) {
             this.#addEmptyTab()
         }
+    }
+
+    restoreTabAction() {
+        if (this.removedTabs.length == 0) {
+            return
+        }
+
+        const { name, innerData } = this.removedTabs.pop()
+        const tab = this.addTab(name, false)
+        tab.tabController.import(innerData)
+        this.selectTab(tab)
     }
 
     #initiateContextMenu() {
