@@ -59,7 +59,7 @@ opengrok: check-env
 web: check-env
 	@echo "Building Graffiti for Web"
 	sed -i.bak "s/Version _VERSION_/Version $(VERSION)/" frontends/web/index.html
-	cd frontends/web; find . -type f ! -name '*.bak' -exec zip ../../out/graffiti_v$(VERSION)_frontend_web.zip {} +
+	cd frontends/web; find . -type f ! -name '*.bak' ! -name 'tags' -exec zip ../../out/graffiti_v$(VERSION)_frontend_web.zip {} +
 	mv frontends/web/index.html.bak frontends/web/index.html
 
 visio: check-env
