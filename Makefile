@@ -57,9 +57,9 @@ opengrok: check-env
 	cd backends/opengrok && zip -r ../../out/graffiti_v$(VERSION)_for_opengrok.zip *
 
 web: check-env
-	@echo "Building Graffiti for Web"
+	@echo "Building Giraffiti for Web"
 	sed -i.bak "s/Version _VERSION_/Version $(VERSION)/" frontends/web/index.html
-	cd frontends/web; find . -type f ! -name '*.bak' ! -name 'tags' -exec zip ../../out/graffiti_v$(VERSION)_frontend_web.zip {} +
+	cd frontends/web; find . -type f ! -name '*.bak' ! -name 'tags' -exec zip ../../out/giraffiti_v$(VERSION)_frontend_web.zip {} +
 	mv frontends/web/index.html.bak frontends/web/index.html
 
 visio: check-env
