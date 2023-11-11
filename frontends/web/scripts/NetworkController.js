@@ -35,16 +35,21 @@ class NetworkController {
 
                 const nodeId = this.addNodeAndEdge(controller, selectedNode, msg.node, msg.edge, this.isExistingToNew(), true)
                 if (this.isNewWillBeSelected())
-                    controller.selectNode(nodeId)
+                    controller.selectNode(nodeId, true)
             })
         } else if (msg.type == MSG_ADD_NODES_AND_EDGES) {
+            let isExistingToNew = this.isExistingToNew()
+            if (msg.hasOwnProperty('direction')) {
+                isExistingToNew = msg.direction == 'e2n'
+            }
+
             this.tabsController.onCurrent((_, controller) => {
                 const selectedNode = controller.selectedNode
 
                 controller.addUndoMarker()
 
                 for (const node of msg.nodes) {
-                    this.addNodeAndEdge(controller, selectedNode, node, msg.edge, this.isExistingToNew(), false)
+                    this.addNodeAndEdge(controller, selectedNode, node, msg.edge, isExistingToNew, false)
                 }
             })
 
@@ -52,7 +57,7 @@ class NetworkController {
         } else if (msg.type == MSG_UPDATE_NODES) {
             // I assume all the opened tabs are from the same app, otherwise...
             for (const { tabController } of this.tabsController.tabs) {
-                tabController.updateNodes(msg.selection, msg.update)
+                tabController.updateNodes(msg.selection, msg.update, msg.version || 1)
             }
         }
     }

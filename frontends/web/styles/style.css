@@ -100,6 +100,20 @@ body {
     background-color: #0078d7;
 }
 
+.tabs .divider {
+    background-color: inherit;
+    float: left;
+    border: white solid 2px;
+    outline: none;
+    cursor: grabbing;
+    height: 48px;
+    width: 20px;
+}
+
+.tabs .divider.dragover { 
+    filter: brightness(50%);
+}
+
 /* Style the buttons inside the tab */
 .tabs button {
     background-color: inherit;
@@ -120,9 +134,8 @@ body {
 
 /* Create an active/current tablink class */
 .tabs button.active {
-    background-color: #006abe;
+    background-color: #006abe !important;
 }
-
 
 .buttons>button {
     display: inline-block;

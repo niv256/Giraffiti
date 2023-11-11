@@ -12,7 +12,7 @@
         <div class="buttons right">
             <button onclick="event_import()" title="Import (Ctrl+O)"><img src="images/icon_import.svg" class="action_icon"
                     alt="Import" /></button>
-            <button onclick="event_export()" title="Export (Ctrl+S)&#013;(Ctrl+Shift+S for all tabs)"><img src="images/icon_export.svg"
+            <button onclick="event_export()" oncontextmenu="return event_exportAll()" title="Export (Ctrl+S); Export All (Ctrl+Alt+S)"><img src="images/icon_export.svg"
                     class="action_icon" alt="Export" /></button>
             <button onclick="event_mermaid()" title="Mermaid"><img src="images/icon_mermaid.svg" class="action_icon"
                     alt="Mermaid" /></button>
@@ -28,7 +28,7 @@
                     alt="Redo" /></button>
             <button onclick="event_delete()" title="Delete (Delete)"><img src="images/icon_delete.svg"
                     class="action_icon" alt="Delete" /></button>
-            <button onclick="event_center()" oncontextmenu="return event_toggleRenderer()" title="Center (Home)&#10;&#13;Right click to change renderer"><img src="images/icon_layout.svg" class="action_icon"
+            <button onclick="event_focusOnSelected()" oncontextmenu="return event_center()" title="Focus selecred node (Home)&#10;&#13;Right click to reset zoom (Ctrl+Home)"><img src="images/icon_layout.svg" class="action_icon"
                     alt="Layout" /></button>
             <div class="arrowToggle" title="Arrow direction (Ctrl+I)&#10;&#13;Focus (Ctrl+Alt+Shift+I)" oncontextmenu="return event_toggleFocusTarget()">
                 <label for="isExistingToNew">
@@ -63,7 +63,7 @@
     <div id="viewId" class="view"></div>
 
     <footer style="display: none;">
-        <span class="subtitle">An experiment by yoavst (2023) - Version _VERSION_</span>
+        <span class="subtitle">yoavst (2023) - Version _VERSION_</span>
         <div class="right">
             <span>Press ? for help</span>
         </div>

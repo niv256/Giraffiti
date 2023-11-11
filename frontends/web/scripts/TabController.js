@@ -10,13 +10,13 @@ const SWAP_IDS = "swapIds"
 const MARKER = "marker"
 
 const THEMES = [
-    ['#A9D18E', 'black', '#80bb58'],
-    ['#BDD0E9', 'black', '#84a7d6'],
-    ['#FFE699', 'black', '#ffd34d'],
-    ['#ED7D31', 'black', '#c15811'],
-    ['#D9D9D9', 'black', '#b3b3b3'],
-    ['#FF695E', 'black', '#FF5145'],
-    ['#FFDDE1', 'black', '#FFDDEA']
+    ['#A9D18E', 'black'],
+    ['#BDD0E9', 'black'],
+    ['#FFE699', 'black'],
+    ['#ED7D31', 'black'],
+    ['#D9D9D9', 'black'],
+    ['#FF695E', 'black'],
+    ['#FFDDE1', 'black'],
 ]
 const MARKDOWN_THEME = ['white', 'black', '#e5e5e5']
 const COMMENT_THEME = ['#bfbfbf', 'black', '#858585']
@@ -95,6 +95,27 @@ class TabController {
         this.zoom.zoomAbs(0, 0, 1)
     }
 
+    resetScrollingToSelected() {
+        if (this.selectedNode == null) {
+            this.resetScrolling()
+        } else {
+            const selectedElement = this.#getDomElementFromId(this.selectedNode.id)
+            const [x,y] = this.#getTransform(selectedElement)
+            
+            this.zoom.moveTo(-x + parseInt(this.view.offsetWidth / 2), -y + parseInt(this.view.offsetHeight / 2))
+            this.zoom.zoomAbs(0, 0, 1)
+        }
+    }
+
+    #getTransform(element) {
+        var xforms = element.transform.baseVal
+        var firstXForm = xforms.getItem(0)
+        if (firstXForm.type == SVGTransform.SVG_TRANSFORM_TRANSLATE){
+            return [firstXForm.matrix.e, firstXForm.matrix.f]
+        }
+        return [0, 0]
+    }
+
     toMermaid(gui = false, elkRenderer = false) {
         let s = ""
 
@@ -102,8 +123,8 @@ class TabController {
             s = this.cachedMermaid
         } else {
             const [nodes, edges] = [this.nodes.asReadOnly(), this.edges.asReadOnly()]
-            const themesForNodes = THEMES.map(() => [])
-            const markdownNodes = []
+            const themesForNodes = THEMES.map(() => []) 
+            const defaultMarkdownTheme = []
             const commentNodes = []
             const lineNodes = []
             const commentNodesSet = new Set()
@@ -135,19 +156,18 @@ class TabController {
                         commentNodesSet.add(node.id)
                     }
 
-                    if (!gui || this.selectedNode == null || this.selectedNode.id != node.id) {
-                        if (node.extra.isComment) {
-                            commentNodes.push(nodeName)
-                        } else {
-                            markdownNodes.push(nodeName)
-                        }
+                    if (node.extra.isComment) {
+                        commentNodes.push(nodeName)
+                    } else if (!node.theme) {
+                        defaultMarkdownTheme.push(nodeName)
+                    } else {
+                        themesForNodes[node.theme].push(nodeName)
                     }
                 }
                 else {
                     s += `  ${nodeName}["${escapeHtml(node.label, gui)}"]\n`
-                    if (!gui || this.selectedNode == null || this.selectedNode.id != node.id) {
-                        themesForNodes[node.theme || 0].push(nodeName)
-                    }
+                    themesForNodes[node.theme || 0].push(nodeName)
+                    
 
                     if (node.extra.hasOwnProperty('line')) {
                         lineNodes.push(nodeName)
@@ -159,7 +179,7 @@ class TabController {
             // Add edges
             s += "\n\n"
             for (const edge of edges) {
-                if (commentNodesSet.has(edge.to)) {
+                if (commentNodesSet.has(edge.to) || commentNodesSet.has(edge.from)) {
                     s += `N${edge.from} --- N${edge.to}\n`
                 } else if ('label' in edge) {
                     s += `N${edge.from}-->|"${escapeHtml(edge.label, gui)}"|N${edge.to}\n`
@@ -176,10 +196,10 @@ class TabController {
                     s += `class ${themesForNodes[index].join(',')} theme${index}\n`
                 }
             }
-            // Add theme for markdown
-            if (markdownNodes.length != 0) {
-                s += `classDef markdown fill:${MARKDOWN_THEME[0]},color:${MARKDOWN_THEME[1]},stroke:black,stroke-width:2px\n`
-                s += `class ${markdownNodes.join(',')} markdown\n`
+
+            if (defaultMarkdownTheme.length != 0) {
+                s += `classDef markdownDefaultTheme fill:${MARKDOWN_THEME[0]},color:${MARKDOWN_THEME[1]},stroke:black,stroke-width:2px\n`
+                s += `class ${defaultMarkdownTheme.join(',')} markdownDefaultTheme\n`
             }
 
             if (commentNodes.length != 0) {
@@ -198,14 +218,6 @@ class TabController {
             }
         }
 
-        // Add selected node
-        if (gui) {
-            s += "\n\n"
-            if (this.selectedNode != null) {
-                const theme = (this.selectedNode.extra.isMarkdown ? MARKDOWN_THEME : THEMES[this.selectedNode.theme || 0])
-                s += `style N${this.selectedNode.id} fill:${theme[2]},stroke:#333,stroke-width:4px`
-            }
-        }
         return s
     }
 
@@ -255,7 +267,7 @@ class TabController {
     }
 
     onSetTheme(themeIndex) {
-        if (this.selectedNode != null && !this.selectedNode.extra.isMarkdown) {
+        if (this.selectedNode != null) {
             const currentTheme = this.selectedNode.theme || 0
             if (currentTheme != themeIndex) {
                 this.selectedNode.theme = themeIndex
@@ -427,6 +439,8 @@ class TabController {
                             onShow: () => _this.enableHoverDoc
                         });
                     }
+
+                    _this.#selectNodeInUI(null, _this.selectedNode?.id)
                 }
             }
 
@@ -538,7 +552,7 @@ class TabController {
         return this.nodes.filter(item => item.extra[propertyName] == propertyValue);
     }
 
-    selectNode(id) {
+    selectNode(id, shouldRedraw=false) {
         const oldSelectedNode = this.selectedNode
         if (id == null) {
             this.selectedNode = null
@@ -550,9 +564,50 @@ class TabController {
             }
         }
         if (oldSelectedNode != this.selectedNode) {
-            this.cachedMermaid = null
-            this.draw()
+            if (shouldRedraw) {
+                this.cachedMermaid = null
+                this.draw()
+            } else {
+                this.#selectNodeInUI(oldSelectedNode?.id, id)
+            }
         }
+    }
+
+    #selectNodeInUI(oldId, newId) {
+        if (this.nodes.size() != 0) { 
+            const nodesContainer = this.#getDomNodesContainerElement()
+            if (!nodesContainer) {
+                // Nothing is drawn, so no need to do anything
+                return
+            }
+
+            if (oldId != null) {
+                const oldSelectedElement = this.#getDomElementFromId(oldId, nodesContainer)
+                const oldSelectedBorders = oldSelectedElement.querySelector('rect')
+
+                oldSelectedElement.style = ""
+                oldSelectedBorders.style = ""
+            }
+            if (newId != null) {
+                const newSelectedElement = this.#getDomElementFromId(newId, nodesContainer)
+                const newSelectedBorders = newSelectedElement.querySelector('rect')
+
+                newSelectedElement.style = "filter: brightness(90%);"
+                newSelectedBorders.style = "stroke:#333 !important; stroke-width:4px !important;"
+            }
+        }
+    }
+
+    #getDomElementFromId(id, nodesContainer=null) {
+        if (!nodesContainer) {
+            nodesContainer = this.#getDomNodesContainerElement()
+        }
+        return nodesContainer.querySelector(`g.node[id^=flowchart-N${id}-]`)
+
+    }
+
+    #getDomNodesContainerElement() {
+        return this.container.getElementsByTagName('diagram-div')[0]?.shadowRoot?.querySelector('.nodes')   
     }
 
     swapNodes(id1, id2, swapParents, swapIds) {
@@ -784,38 +839,61 @@ class TabController {
         this.draw()
     }
 
-    updateNodes(selection, updateObj) {
-        this.cachedMermaid = null
-
-        const updates = this.nodes.filter(item => {
-            const extra = item.extra
-            for (const [key, value] of selection) {
-                if (!(key in extra)) return false;
-                if (extra[key] != value) return false;
-            }
-            return true;
+    updateNodes(selection, updateObj, version) {
+        let updates;
+        if (version == 1) {
+            updates = this.nodes.filter(item => this.#selectionV1(item.extra, selection))
+        } else {
+            updates = this.nodes.filter(item => this.#selectionV2(item.extra, selection))
         }
 
-        ).map(item => mergeToVisNode(item, updateObj))
+        updates = updates.map(item => mergeToVisNode(item, updateObj))
         this.nodes.updateOnly(updates)
 
+        const _this = this;
         const updateUndoItem = item => {
             if (item.type != ADD_NODE && item.type != REMOVE_NODE)
                 return item
+            
 
-            const extra = item.data.extra
-            for (const [key, value] of selection) {
-                if (!(key in extra)) return item;
-                if (extra[key] != value) return item;
+            const shouldUpdate = version == 1 ? _this.#selectionV1(item.data.extra, selection) : _this.#selectionV2(item.data.extra, selection)
+
+            if (shouldUpdate) {
+                return ({ type: item.type, data: mergeToVisNode(item.data, updateObj) })
+            } else {
+                return item
             }
-            return ({ type: item.type, data: mergeToVisNode(item.data, updateObj) })
         }
 
         this.undoHistory = this.undoHistory.map(updateUndoItem)
         this.redoHistory = this.redoHistory.map(updateUndoItem)
 
+        if (updates.length != 0) {
+            // A node was actually updated, redraw
+            this.cachedMermaid = null
+            this.draw()
+        }
+    }
 
-        this.draw()
+    #selectionV1(extra, selection) {
+        // Scheme of selection is: [(key1, value1), (key2, value2)] and we requires key1=value1, key2=value2
+        for (const [key, value] of selection) {
+            if (!(key in extra)) return false;
+            if (extra[key] != value) return false;
+        }
+        return true;
+    }
+
+    #selectionV2(extra, selection) {
+        // Scheme of selection is: [[(key1, value1), (key2, value2)],[(key3, value3), (key4, value4)]] and we requires (key1=value1, key2=value2) or (key3=value3, key4=value4)
+        outerLoop: for (const specificSelection of selection) {
+            for (const [key, value] of specificSelection) {
+                if (!(key in extra)) return false;
+                if (extra[key] != value) continue outerLoop;
+            }
+            return true;
+        }
+        return false;
     }
 
     getProjects() {

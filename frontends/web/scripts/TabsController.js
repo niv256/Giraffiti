@@ -10,6 +10,7 @@ class TabsController {
         this.contextMenuOpenedForTab = null
         this.selectedTab = null
         this.selectTab(null)
+        this.tabIdCounter = 0
 
         this.#initiateContextMenu()
     }
@@ -18,18 +19,21 @@ class TabsController {
         return this.tabs.length
     }
 
+
     addTab(name, shouldSave = true) {
         const realThis = this
+        const tabId = this.tabIdCounter++
         // Add tab to tabs view
         const tabElement = document.createElement("button")
         tabElement.className = "tablinks"
         tabElement.textContent = name;
-        this.tabsView.appendChild(tabElement);
+        this.#setDraggable(tabElement, tabId)
+        this.tabsView.appendChild(tabElement)
 
         // add view's content to content view
         const contentElement = document.createElement("div")
         contentElement.className = "hidden"
-        this.contentView.appendChild(contentElement);
+        this.contentView.appendChild(contentElement)
 
         // initiate tab
         const tabController = new TabController()
@@ -38,7 +42,7 @@ class TabsController {
             tabController.elkRenderer = true
         }
         tabController.initView(contentElement)
-        const tab = { name, tabController, tabElement, contentElement }
+        const tab = { name, tabController, tabElement, contentElement, id: tabId }
         this.tabs.push(tab)
 
         // Now setup UI callbacks
@@ -51,6 +55,88 @@ class TabsController {
 
         return tab
     }
+
+    #setDraggable(tabElement, tabId) {
+        const _this = this
+
+        tabElement.draggable = true
+
+        tabElement.addEventListener('dragstart', function (e) {
+            tabElement.style.opacity = '0.4';
+
+            setTimeout(() => {
+                _this.#addDividers(tabId)
+            }, 100)
+        });
+        tabElement.addEventListener('dragend', () => {
+            _this.#dragEnd()
+        });
+
+
+        tabElement.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            return false;
+        });
+    }
+
+    #dragEnd() {
+        this.tabs.forEach(tab => tab.tabElement.style.opacity = '1.0');
+        this.#removeDividers()
+    }
+
+    #addDividers(tabId) {
+        let index = 0;
+        for (const { tabElement } of this.tabs) {
+            const dividerElement = this.#createDivider(index, tabId)
+            this.tabsView.insertBefore(dividerElement, tabElement)
+            index++
+        }
+        this.tabsView.appendChild(this.#createDivider(index, tabId))
+    }
+
+    #createDivider(index, tabId) {
+        const _this = this
+
+        const dividerElement = document.createElement("div")
+        dividerElement.classList.add("divider")
+        dividerElement.addEventListener('drop', function (e) {
+            e.stopPropagation()
+            _this.#dragEnd()
+
+            const draggedTabIndex = _this.tabs.findIndex(({ id }) => id == tabId)
+
+            if (index != draggedTabIndex) {
+                if (index < _this.tabs.length) {
+                    // Move the tab to the left of the current tab
+                    _this.tabsView.insertBefore(
+                        _this.tabs[draggedTabIndex].tabElement,
+                        _this.tabs[index].tabElement
+                    )
+                } else {
+                    _this.tabsView.insertAdjacentElement('beforeend', _this.tabs[draggedTabIndex].tabElement)
+                }
+                arraymove(_this.tabs, draggedTabIndex, index)
+
+                _this.save()
+            }
+        })
+
+        dividerElement.addEventListener('dragenter', () => {
+            dividerElement.classList.add('dragover')
+        })
+        dividerElement.addEventListener('dragleave', () => {
+            dividerElement.classList.remove('dragover')
+        })
+
+        return dividerElement
+    }
+
+    #removeDividers() {
+        [...this.tabsView.querySelectorAll('.divider')].forEach(e => e.remove())
+    }
+
+
+
 
     removeTab(index) {
         const [{ name, tabController, tabElement, contentElement }] = this.tabs.splice(index, 1)
@@ -109,6 +195,7 @@ class TabsController {
         // Save selected tab
         this.selectedTab = tab
         this.selectedTabIndex = this.tabs.indexOf(tab)
+        this.saveSelectedTab()
     }
 
     onCurrent(callback) {
@@ -118,8 +205,14 @@ class TabsController {
         }
     }
 
+    onEach(callback) {
+        this.tabs.forEach(({ name, tabController }) => {
+            callback(name, tabController)
+        })
+    }
+
     onId(id, callback) {
-        this.tabs.forEach(({name, tabController}) => {
+        this.tabs.forEach(({ name, tabController }) => {
             if (tabController.mermaidId == id) {
                 callback(name, tabController)
             }
@@ -132,10 +225,18 @@ class TabsController {
         const data = JSON.stringify({tabs, removedTabs})
         localStorage.setItem("__SAVED_DATA", data)
         localStorage.setItem("__SAVED_DATA_VERSION", STORAGE_VERSION)
+
+        this.saveSelectedTab()
+    }
+
+    saveSelectedTab() {
+        localStorage.setItem("__SAVED_TAB_INDEX", this.tabs.indexOf(this.selectedTab))
     }
 
     restore() {
         const data = JSON.parse(localStorage.getItem("__SAVED_DATA"))
+        const selectedTabIndex = parseInt(localStorage.getItem("__SAVED_TAB_INDEX") || 0)
+
         if (data != null) {
             // Support migrating from lower version
             const version = parseInt(localStorage.getItem("__SAVED_DATA_VERSION")) || 1;
@@ -159,9 +260,10 @@ class TabsController {
 
                 this.removedTabs = data.removedTabs
             }
+
         }
         if (this.count() >= 1) {
-            this.selectTab(this.tabs[0])
+            this.selectTab(this.tabs[selectedTabIndex])
         } else {
             this.#addEmptyTab()
         }
@@ -243,12 +345,12 @@ class TabsController {
             }
         }
 
-        this.contextMenu.querySelector("#sources").onclick = function() {
+        this.contextMenu.querySelector("#sources").onclick = function () {
             // Hide context menu
             const contextMenuOpenedForTab = realThis.contextMenuOpenedForTab
             realThis.contextMenuOpenedForTab = null
             realThis.contextMenu.classList.remove("visible");
-            
+
             setTimeout(() => {
                 if (contextMenuOpenedForTab != null) {
                     const { tabController } = contextMenuOpenedForTab
@@ -259,13 +361,13 @@ class TabsController {
                             text: 'This graffiti file was created with old utils. Consider upgrading to the latest version.',
                             type: 'info',
                             confirmButtonText: 'OK'
-                          })
+                        })
                     } else {
                         Swal.fire({
                             title: 'Linked projects',
                             html: projects.join('<br>'),
                             confirmButtonText: 'OK'
-                          })
+                        })
                     }
                 }
             })
@@ -337,3 +439,8 @@ class TabsController {
     };
 }
 
+function arraymove(arr, fromIndex, toIndex) {
+    var element = arr[fromIndex];
+    arr.splice(fromIndex, 1);
+    arr.splice(toIndex, 0, element);
+}
