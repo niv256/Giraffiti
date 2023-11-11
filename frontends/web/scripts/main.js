@@ -3,13 +3,21 @@ const MSG_ADD_NODES_AND_EDGES = "addDataBulk"
 const MSG_UPDATE_NODES = "updateNodes"
 const LOCAL_STORAGE_DEFAULT = {isKeymapReversed: false, hoverDoc: false}
 
-const GIRAFFE_OPACITY = 0.6;
-const GIRAFFE_INTERVAL = 1 * 60 * 60 * 1000;
-const GIRAFFE_DURATION = 3 * 1000;
+const MS = 1000
+const GIRAFFE_INTERVAL = 1 * 60 * 60 * MS
+const GIRAFFE_DURATION = 3 * MS
+const GIRAFFE_SERVER_CONNECT_INTERVAL = 10 * MS
+const GIRAFFE_OPACITY = 0.6
+const GIRAFFE_IP = "127.0.0.1"
+const GIRAFFE_PORT = 3000
 
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function get_rand(min, max) {
+    return Math.floor(Math.random() * (max-min) + min)
 }
 
 function event_connect() {
@@ -334,9 +342,42 @@ function addTextualNode(title, extra_node_properties, extra_edge_properties={}) 
         })
 }
 
-function spawnGiraffeTimer() {
+function spawnGiraffeTimer(duration) {
     setTimeout(event_showGiraffe, 0, true)
-    setTimeout(event_showGiraffe, GIRAFFE_DURATION, false)
+    setTimeout(event_showGiraffe, duration, false)
+}
+
+var ws = null
+function openGiraffeWS() {
+    const id = get_rand(0, 10000)
+
+    ws = new WebSocket(`ws://${GIRAFFE_IP}:${GIRAFFE_PORT}`)
+
+    ws.onopen = function() {
+        var tabs = []
+        window.tabsController.tabs.forEach(function(tab) {tabs.push(tab.name)})
+
+        ws.send("id: " + id)
+        ws.send("tabs: " + tabs)
+    }
+
+    ws.onmessage = function(msg) {
+        var [receiverId, duration] = msg.data.split(" ")
+        duration = parseFloat(duration)
+        receiverId = parseInt(receiverId)
+
+        if (receiverId == id && duration) {
+            spawnGiraffeTimer(duration * 1000)
+        }
+    }
+}
+
+function giraffeServerWatchdog() {
+    if (ws && ws.readyState == WebSocket.OPEN) {
+        return
+    }
+
+    openGiraffeWS()
 }
 
 function main() {
@@ -352,7 +393,8 @@ function main() {
 
     window.tabsController = tabsController
 
-    setInterval(spawnGiraffeTimer, GIRAFFE_INTERVAL)
+    //setInterval(spawnGiraffeTimer, GIRAFFE_INTERVAL, GIRAFFE_DURATION)
+    setInterval(giraffeServerWatchdog, GIRAFFE_SERVER_CONNECT_INTERVAL)
 }
 
 function initiateDependencies() {
